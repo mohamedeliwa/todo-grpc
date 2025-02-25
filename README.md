@@ -185,3 +185,89 @@ server.bindAsync(
   }
 );
 ```
+
+## Building the client
+
+the client will be quite similar to the server,\
+so I will skip explaining the repeated steps
+
+```js
+import grpc from "@grpc/grpc-js";
+import protoLoader from "@grpc/proto-loader";
+
+const packageDef = protoLoader.loadSync("todo.proto", {});
+
+const grpcObject = grpc.loadPackageDefinition(packageDef);
+
+const todoPackage = grpcObject.todoPackage;
+```
+
+after this we need to point our client service to the address at which it can send requests to our server service
+
+so we create a new instance of the todo service
+then pass the localhost and port at which our server is listening
+
+the second param, basically we are saying it's insecure connection
+
+```js
+const client = new todoPackage.Todo(
+  "0.0.0.0:3000",
+  grpc.credentials.createInsecure()
+);
+```
+
+we need to use our client like so `node client.js "Buy some Books"`\
+so our client picks up the todo text we wrote and send it to the server to store.
+
+to be able to so, we need a way to access the command line arguments\
+
+```js
+const text = process.argv[2];
+```
+
+this line basically gets the text we enter to our client.js
+
+then we start invoke our todo methods
+
+```js
+// Unary
+client.createTodo({ id: -1, text }, (err, res) => {
+  console.log({
+    create: res,
+  });
+});
+
+// sync
+client.readTodos({}, (err, res) => {
+  res.items.forEach((item) => {
+    console.log(item.text);
+  });
+});
+
+// server streaming
+const call = client.readTodosStream();
+call.on("data", (item) => {
+  console.log(item.text);
+});
+call.on("end", (e) => console.log("server done streaming"));
+```
+
+- the first call will create a new todo on the server
+- the second call will get us all the todos on the server
+- the third call, is stream, so we will attach two event listeners to it, one will be invoked each time we get new data, and another will be invoked when server finishes streaming
+
+## Run the project
+
+inside a terminal run
+
+```bash
+node server.js
+```
+
+and from another terminal, run the client multiple times, and pass text to it
+
+```bash
+node client.js "Buy some books"
+```
+
+That's it, thanks for reading!
