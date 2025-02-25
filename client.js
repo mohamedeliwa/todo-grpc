@@ -14,8 +14,24 @@ const client = new todoPackage.Todo(
 
 const text = process.argv[2];
 
+// Unary
 client.createTodo({ id: -1, text }, (err, res) => {
   console.log({
-    res,
+    create: res,
   });
 });
+
+// sync
+client.readTodos({}, (err, res) => {
+  res.items.forEach((item) => {
+    console.log(item.text);
+  });
+});
+
+// server streaming
+const call = client.readTodosStream();
+call.on("data", (item) => {
+  console.log(item.text);
+});
+
+call.on("end", e => console.log("server done streaming"));

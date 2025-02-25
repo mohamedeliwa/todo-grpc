@@ -12,10 +12,12 @@ const server = new grpc.Server();
 server.addService(todoPackage.Todo.service, {
   createTodo: createTodo,
   readTodos: readTodos,
+  readTodosStream: readTodosStream,
 });
 
 const todos = [];
 
+// Unary
 function createTodo(call, callback) {
   const todoItem = {
     id: todos.length,
@@ -25,8 +27,17 @@ function createTodo(call, callback) {
   callback(null, todoItem);
 }
 
+// Sync
 function readTodos(call, callback) {
-  console.log(call);
+  callback(null, { items: todos });
+}
+
+// server stream
+function readTodosStream(call, callback) {
+  todos.forEach((todo) => {
+    call.write(todo);
+  });
+  call.end();
 }
 
 server.bindAsync(
